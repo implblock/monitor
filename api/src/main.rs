@@ -1,7 +1,9 @@
-use anyhow::Context;
-use axum::Router;
+use axum::{routing, Router};
 use tokio::net::TcpListener;
 
+use anyhow::Context;
+
+pub mod health_check;
 pub mod routes;
 
 // for simple empty results
@@ -16,10 +18,15 @@ async fn main() -> Any {
         format!("0.0.0.0:{}", PORT)
     );
 
-    let socket = TcpListener::bind(addr).await
+    let socket = TcpListener::bind(&addr).await
         .with_context(|| "connecting to socket")?;
 
-    let router = Router::new();
+    let router = Router::new()
+        .route("/", routing::get(routes::root));
+
+    tracing::info!(
+        "now serving on {}", addr,
+    );
 
     axum::serve(
         socket,
