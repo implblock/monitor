@@ -3,10 +3,7 @@ use tokio::net::TcpListener;
 
 use anyhow::Context;
 
-pub mod health_check;
-
 pub mod routes;
-pub mod probe;
 
 // for simple empty results
 type Any = anyhow::Result<()>;
