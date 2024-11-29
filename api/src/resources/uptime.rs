@@ -66,7 +66,7 @@ impl Probe for Uptime {
         ]: [
             Duration; 2
         ] = parts.flat_map(|x| x.parse::<f32>())
-            .map(|x| Duration::from_secs_f32(x))
+            .map(Duration::from_secs_f32)
             .collect::<Vec<Duration>>()
             .try_into()
             .map_err(|_| Error::InvalidUptime)?;

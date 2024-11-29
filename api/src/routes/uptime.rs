@@ -18,5 +18,5 @@ pub async fn uptime_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> 
 }
 
 pub async fn uptime() -> Result<Json<Uptime>, ApiError> {
-    Ok(Json(Uptime::probe().await?))
+    Ok(Uptime::probe().await.map(Json)?)
 }

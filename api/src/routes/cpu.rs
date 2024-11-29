@@ -17,5 +17,5 @@ pub async fn cpu_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
 }
 
 pub async fn cpu() -> Result<Json<Cpu>, ApiError> {
-    Ok(Json(Cpu::probe().await?))
+    Ok(Cpu::probe().await.map(Json)?)
 }

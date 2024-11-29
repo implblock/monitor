@@ -22,5 +22,5 @@ pub async fn mem_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
 }
 
 pub async fn mem() -> Result<Json<Memory>, ApiError> {
-    Ok(Memory::probe().await.map(|x| Json(x))?)
+    Ok(Memory::probe().await.map(Json)?)
 }
