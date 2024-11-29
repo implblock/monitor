@@ -3,7 +3,10 @@ use tokio::net::TcpListener;
 
 use anyhow::Context;
 
+pub mod resources;
+pub mod testing;
 pub mod routes;
+pub mod error;
 
 // for simple empty results
 type Any = anyhow::Result<()>;
@@ -21,7 +24,13 @@ async fn main() -> Any {
         .with_context(|| "connecting to socket")?;
 
     let router = Router::new()
-        .route("/", routing::get(routes::root));
+        .route("/", routing::get(routes::root))
+        .route("/mem", routing::get(routes::mem))
+        .route("/cpu", routing::get(routes::cpu))
+        .route("/uptime", routing::get(routes::uptime))
+        .route("/mem/rt", routing::get(routes::mem_sse))
+        .route("/cpu/rt", routing::get(routes::cpu_sse))
+        .route("/uptime/rt", routing::get(routes::uptime_sse));
 
     tracing::info!(
         "now serving on {}", addr,

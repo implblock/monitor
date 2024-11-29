@@ -13,12 +13,9 @@ pub enum Health {
 pub trait Healthcheck {
     fn on_unhealthy(&self, func: impl Fn()) -> impl Future {
         async move {
-            match self.health() {
-                Health::Unhealthy { .. } => {
-                    func(); return;
-                },
-                _ => {},
-            }
+            let Health::Healthy = self.health() else {
+                func(); return;
+            };
 
             while let Health::Healthy = self.health() {
                 std::hint::spin_loop();
@@ -30,12 +27,9 @@ pub trait Healthcheck {
 
     fn on_healthy(&self, func: impl Fn()) -> impl Future {
         async move {
-            match self.health() {
-                Health::Healthy => {
-                    func(); return;
-                },
-                _ => {},
-            }
+            let Health::Unhealthy { .. } = self.health() else {
+                func(); return;
+            };
 
             while let Health::Unhealthy {
                 ..

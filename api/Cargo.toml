@@ -9,5 +9,7 @@ axum = "0.7.9"
 thiserror = "2.0.3"
 tokio = { version = "1.41.1", features = ["full"] }
 tracing = "0.1.41"
-tracing-subscriber = "0.3.18"
-core = { path = "../core" }
+monitor-core = { path = "../monitor-core" }
+serde = { version = "1.0.215", features = ["derive"] }
+tokio-stream = "0.1.16"
+futures-util = "0.3.31"
