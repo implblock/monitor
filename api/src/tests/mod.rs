@@ -1,5 +1,7 @@
 #[cfg(test)]
-mod memory; 
+mod memory;
+#[cfg(test)]
+mod uptime;
 #[cfg(test)]
 mod cpu;
 

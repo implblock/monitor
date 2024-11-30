@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{num::ParseFloatError, time::Duration};
 
 use monitor_core::probe::Probe;
 use serde::{Deserialize, Serialize};
@@ -29,10 +29,12 @@ pub struct Uptime {
 )]
 
 pub enum Error {
+    #[error("the uptime received has an invalid amount of columns")]
+    InvalidUptime,
     #[error("io error occurred getting uptime: {0}")]
     Io(#[from] io::Error),
-    #[error("the uptime received is invalid")]
-    InvalidUptime,
+    #[error("failed to parse int: {0}")]
+    ParseFloat(ParseFloatError),
     #[error("uptime file is empty")]
     Empty,
 }
@@ -65,9 +67,10 @@ impl Probe for Uptime {
             idle,
         ]: [
             Duration; 2
-        ] = parts.flat_map(|x| x.parse::<f32>())
-            .map(Duration::from_secs_f32)
-            .collect::<Vec<Duration>>()
+        ] = parts.map(|x| x.parse::<f32>()
+                .map(Duration::from_secs_f32)
+                .map_err(|e| Error::ParseFloat(e)))
+            .try_collect::<Vec<Duration>>()?
             .try_into()
             .map_err(|_| Error::InvalidUptime)?;
 
@@ -76,35 +79,4 @@ impl Probe for Uptime {
             idle,
         })
     }
-}
-
-#[tokio::test]
-pub async fn test_probe_uptime() -> crate::Any {
-    let data = "100.0 10.0";
-
-    crate::tests::point_env_file(
-        "UPTIME",
-        "/tmp/uptime",
-        data,
-    ).await?;
-
-    let uptime =
-        Uptime::probe().await?;
-
-    assert_eq!(
-        uptime.uptime,
-        Duration::from_secs_f32(
-            100.0
-        ),
-        "invalid uptime"
-    );
-    assert_eq!(
-        uptime.idle,
-        Duration::from_secs_f32(
-            10.0,
-        ),
-        "invalid idle time",
-    );
-
-    Ok(())
 }
