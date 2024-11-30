@@ -93,6 +93,12 @@ impl Probe for Memory {
         let mut memmap = HashMap::new();
 
         while let Some(x) = meminfo.next_line().await? {
+            // HugePages usually isn't useful and doesn't
+            // have a format at the end so, bye.
+            if x.starts_with("HugePages") {
+                continue;
+            }
+
             if !x.contains(':') {
                 return Err(Error::MissingColon(x));
             }
