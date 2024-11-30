@@ -1,9 +1,24 @@
-use std::{num::ParseFloatError, time::Duration};
+use std::{
+    num::ParseFloatError,
+    time::Duration,
+};
+
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use monitor_core::probe::Probe;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tokio::{fs::File, io::{self, AsyncBufReadExt, BufReader}};
+
+use tokio::{
+    io::{
+        AsyncBufReadExt,
+        BufReader,
+        self,
+    },
+    fs::File,
+};
 
 #[derive(
     Deserialize,

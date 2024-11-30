@@ -1,11 +1,21 @@
+use axum::{
+    response::{
+        sse::Event,
+        Sse,
+    },
+    Json,
+};
+
 use std::convert::Infallible;
 
-use axum::{response::{sse::Event, Sse}, Json};
 use monitor_core::probe::Probe;
-use futures_util::Stream;
 use tokio_stream::StreamExt;
+use futures_util::Stream;
 
-use crate::{error::ApiError, resources::cpu::Cpu};
+use crate::{
+    resources::cpu::Cpu,
+    error::ApiError,
+};
 
 pub async fn cpu_sse() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let s = Cpu::stream().map(|x| {

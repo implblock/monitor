@@ -1,13 +1,25 @@
-use std::{collections::HashMap, num::{IntErrorKind, ParseIntError}};
+use std::{
+    collections::HashMap,
+    num::{
+        IntErrorKind,
+        ParseIntError,
+    },
+};
 
 use monitor_core::probe::Probe;
 
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
+
 use tokio::{
-    fs::File, 
     io::{
-        self, AsyncBufReadExt, BufReader
-    }
+        AsyncBufReadExt,
+        BufReader,
+        self,
+    },
+    fs::File, 
 };
 
 #[derive(
