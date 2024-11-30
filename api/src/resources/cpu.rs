@@ -25,12 +25,17 @@ use tokio::{
     Copy,
 )]
 
+/// Usage, thermal, diagnostics, and
+/// other useful information about
+/// the Cpu
+///
+/// This may use kernel file system
+/// callbacks to get information
 pub struct Cpu {
     pub usage: Usage,
     // TODO make other
     // stuff here--
 }
-
 
 impl Probe for Cpu {
     type Error = <Usage as Probe>::Error;
@@ -57,6 +62,9 @@ impl Probe for Cpu {
     Copy,
 )]
 
+/// Cpu usage from the /proc/stat
+/// file. Mostly information about
+/// the processes the cpu is handling
 pub struct Usage {
     pub guest_nice: u64,
     pub softirq: u64,

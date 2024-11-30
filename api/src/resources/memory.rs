@@ -21,7 +21,12 @@ use tokio::{
     Copy,
 )]
 
-// Memory stats in KB
+/// Most of the memory information from
+/// the linux /proc/meminfo file
+///
+/// This file updates on-read, so
+/// extremely frequent probing is
+/// discouraged.
 pub struct Memory {
     pub inactive_anonymous: u64,
     pub active_anonymous: u64,
@@ -43,6 +48,8 @@ pub struct Memory {
 }
 
 impl Memory {
+    /// Returns the difference of the total
+    /// memory and the free memory.
     pub fn used(&self) -> u64 {
         self.total - self.free
     }

@@ -18,6 +18,8 @@ use tokio::{fs::File, io::{self, AsyncBufReadExt, BufReader}};
     Eq,
 )]
 
+/// The uptime of the system. Taken from the /proc/uptime
+/// file / callback. Also returns the idle time.
 pub struct Uptime {
     pub uptime: Duration,
     pub idle: Duration,
