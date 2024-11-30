@@ -1,4 +1,4 @@
-use std::num::ParseIntError;
+use std::{collections::HashMap, num::{IntErrorKind, ParseIntError}};
 
 use monitor_core::probe::Probe;
 
@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tokio::{
     fs::File, 
     io::{
-        self, AsyncBufReadExt, AsyncWriteExt, BufReader
+        self, AsyncBufReadExt, BufReader
     }
 };
 
@@ -23,9 +23,23 @@ use tokio::{
 
 // Memory stats in KB
 pub struct Memory {
+    pub inactive_anonymous: u64,
+    pub active_anonymous: u64,
+    pub inactive_file: u64,
+    pub active_file: u64,
+    pub unevictable: u64,
+    pub swap_cached: u64,
+    pub swap_total: u64,
+    pub swap_free: u64,
+    pub available: u64,
+    pub inactive: u64,
+    pub m_locked: u64,
+    pub buffers: u64,
+    pub cached: u64,
+    pub active: u64,
+    pub dirty: u64,
     pub total: u64,
     pub free: u64,
-    // TODO maybe add more
 }
 
 impl Memory {
@@ -40,12 +54,18 @@ use thiserror::Error;
 pub enum Error {
     #[error("io error occurred getting meminfo: {0}")]
     Io(#[from] io::Error),
-    #[error("memory is invalid: {0}")]
-    InvalidMemory(#[from] ParseIntError),
-    #[error("total memory not found")]
-    TotalNotFound,
-    #[error("free memory not found")]
-    FreeNotFound,
+    #[error("invalid format, expected kB: {0}")]
+    InvalidFormat(String),
+    #[error("missing field from memory: {0}")]
+    MissingField(String),
+    #[error("failed to parse memory: {0}")]
+    ParseInt(ParseIntError),
+    #[error("missing colon at: {0}")]
+    MissingColon(String),
+    #[error("value is empty: {0}")]
+    ValueEmpty(String),
+    #[error("key is empty: {0}")]
+    KeyEmpty(String),
 }
 
 impl Probe for Memory {
@@ -63,70 +83,105 @@ impl Probe for Memory {
 
         let mut meminfo = bufreader.lines();
 
-        let (total, free) = (meminfo.next_line().await?.ok_or(
-            Error::TotalNotFound
-        ).map(|x| {
-            let x = x.replace("kB", "");
-            let x = x.replace(' ', "");
+        let mut memmap = HashMap::new();
 
-            let mut parts = x.split(':');
-
-            if parts.next().is_none_or(|x| x != "MemTotal") {
-                Err(Error::TotalNotFound)
-            } else {
-                parts.next()
-                    .ok_or(Error::TotalNotFound)
-                    .and_then(|x| Ok(x.parse::<u64>()?))
+        while let Some(x) = meminfo.next_line().await? {
+            if !x.contains(':') {
+                return Err(Error::MissingColon(x));
             }
-        }).and_then(|x| x)?,
-        meminfo.next_line().await?.ok_or(
-            Error::FreeNotFound
-        ).map(|x| {
-            let x = x.replace("kB", "");
-            let x = x.replace(' ', "");
 
-            let mut parts = x.split(':');
+            let mut parts = x.split(':')
+                .map(|x| x.trim().to_owned());
 
-            if parts.next().is_none_or(|x| x != "MemFree") {
-                Err(Error::FreeNotFound)
-            } else {
-                parts.next()
-                    .ok_or(Error::FreeNotFound)
-                    .and_then(|x| Ok(x.parse::<u64>()?))
+            let k = match parts.next() {
+                None => return Err(Error::KeyEmpty(x)),
+                Some(x) if x.is_empty() => {
+                    return Err(Error::KeyEmpty(x));
+                }
+                Some(x) => x,
+            };
+
+            let v = match parts.next() {
+                None => return Err(Error::ValueEmpty(x)),
+                Some(x) if x.trim().is_empty() => {
+                    return Err(Error::ValueEmpty(x));
+                }
+                Some(x) => x.trim().to_owned(),
+            };
+
+            if !v.trim().contains("kB") {
+                return Err(Error::InvalidFormat(x));
             }
-        }).and_then(|x| x)?);
 
-        let mut inner = meminfo.into_inner();
+            let v = v.replace("kB", "").trim()
+                .parse::<u64>().map_err(|e| match e.kind() {
+                    IntErrorKind::Empty => Error::ValueEmpty(x),
+                    _ => Error::ParseInt(e),
+                })?;
 
-        inner.flush().await?;
+            memmap.insert(k, v);
+        }
+
+        let [
+            inactive_anonymous,
+            active_anonymous,
+            inactive_file,
+            active_file,
+            unevictable,
+            swap_cached,
+            swap_total,
+            swap_free,
+            available,
+            inactive,
+            m_locked,
+            buffers,
+            cached,
+            active,
+            dirty,
+            total,
+            free,
+        ] = [
+            "Inactive(anon)",
+            "Active(anon)",
+            "Inactive(file)",
+            "Active(file)",
+            "Unevictable",
+            "SwapCached",
+            "SwapTotal",
+            "SwapFree",
+            "MemAvailable",
+            "Inactive",
+            "Mlocked",
+            "Buffers",
+            "Cached",
+            "Active",
+            "Dirty",
+            "MemTotal",
+            "MemFree",
+        ].try_map(|x| {
+            memmap.get(x).copied().ok_or(
+                Error::MissingField(x.to_string())
+            )
+        })?;
 
         Ok(Self {
+            inactive_anonymous,
+            active_anonymous,
+            inactive_file,
+            active_file,
+            unevictable,
+            swap_cached,
+            swap_total,
+            swap_free,
+            available,
+            inactive,
+            m_locked,
+            buffers,
+            cached,
+            active,
+            dirty,
             total,
             free,
         })
     }
-}
-
-#[tokio::test]
-pub async fn test_probe_mem() -> crate::Any {
-    let total = 32697472;
-    let free = 22874640;
-
-    let data = format!(
-    "MemTotal:       {total} kB\n\
-    MemFree:        {free} kB"
-    );
-
-    crate::testing::point_env_file(
-        "MEMINFO",
-        "/tmp/meminfo",
-       &data, 
-    ).await?;
-
-    let mem = Memory::probe().await?;
-
-    assert_eq!(mem.total, total, "invalid mem total");
-    assert_eq!(mem.free, free, "invalid mem free");
-
-    Ok(())
 }

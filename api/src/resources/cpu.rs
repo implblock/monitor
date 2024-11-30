@@ -1,3 +1,5 @@
+use std::num::ParseIntError;
+
 use monitor_core::probe::Probe;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -24,7 +26,7 @@ use tokio::{
 )]
 
 pub struct Cpu {
-    usage: Usage,
+    pub usage: Usage,
     // TODO make other
     // stuff here--
 }
@@ -74,10 +76,12 @@ pub struct Usage {
 )]
 
 pub enum UsageError {
-    #[error("stat returned an invalid or out of date cpu line")]
+    #[error("stat returned an invalid amount of columns in the cpu line")]
     InvalidCpuLine,
     #[error("io occurred getting cpu info: {0}")]
     Io(#[from] io::Error),
+    #[error("failed to parse int: {0}")]
+    ParseInt(ParseIntError),
     #[error("cpu is missing from stat")]
     CpuMissing,
 }
@@ -95,18 +99,14 @@ impl Probe for Usage {
 
         let mut cpu = String::new();
 
-
         BufReader::new(file).read_line(&mut cpu)
             .await?;
 
-        let bf = cpu.trim();
-
-        let cpu =
-            bf.replace("cpu", "");
-
-        if cpu.len() == bf.len() {
+        if !cpu.starts_with("cpu") {
             return Err(UsageError::CpuMissing);
         }
+
+        let cpu = cpu.split_off(3);
 
         let parts =
             cpu.split_whitespace();
@@ -124,8 +124,11 @@ impl Probe for Usage {
             guest_nice,
         ]: [
             u64; 10
-        ] = parts.flat_map(|x| x.parse::<u64>())
-            .collect::<Vec<u64>>().try_into()
+        ] = parts.map(|x| x.parse::<u64>()
+                .map_err(|x| UsageError::ParseInt(x))
+            )
+            .try_collect::<Vec<u64>>()?
+            .try_into()
             .map_err(|_| UsageError::InvalidCpuLine)?;
 
         Ok(Self {
@@ -141,54 +144,4 @@ impl Probe for Usage {
             irq,
         })
     }
-}
-
-#[tokio::test]
-pub async fn test_probe_cpu() -> crate::Any {
-    let (
-        user,
-        nice,
-        system,
-        idle,
-        iowait,
-        irq,
-        softirq,
-        steal,
-        guest,
-        guest_nice,
-    ) = (
-        257859,
-        80,
-        36625,
-        8098834,
-        4146,
-        0,
-        2561,
-        1,
-        2,
-        3,
-    );
-
-    let data = format!("cpu  {user} {nice} {system} {idle} {iowait} {irq} {softirq} {steal} {guest} {guest_nice}");
-
-    crate::testing::point_env_file(
-        "STAT",
-        "/tmp/stat",
-        &data,
-    ).await?;
-
-    let cpu = Cpu::probe().await?;
-
-    assert_eq!(guest_nice, cpu.usage.guest_nice, "invalid cpu nice metric");
-    assert_eq!(softirq, cpu.usage.softirq, "invalid cpu nice metric");
-    assert_eq!(system, cpu.usage.system, "invalid cpu nice metric");
-    assert_eq!(iowait, cpu.usage.iowait, "invalid cpu nice metric");
-    assert_eq!(guest, cpu.usage.guest, "invalid cpu nice metric");
-    assert_eq!(steal, cpu.usage.steal, "invalid cpu nice metric");
-    assert_eq!(user, cpu.usage.user, "invalid cpu user metric");
-    assert_eq!(nice, cpu.usage.nice, "invalid cpu nice metric");
-    assert_eq!(idle, cpu.usage.idle, "invalid cpu nice metric");
-    assert_eq!(irq, cpu.usage.irq, "invalid cpu nice metric");
-
-    Ok(())
 }

@@ -1,11 +1,14 @@
+#![feature(iterator_try_collect)]
+#![feature(array_try_map)]
+
 use axum::{routing, Router};
 use tokio::net::TcpListener;
 
 use anyhow::Context;
 
 pub mod resources;
-pub mod testing;
 pub mod routes;
+pub mod tests;
 pub mod error;
 
 // for simple empty results

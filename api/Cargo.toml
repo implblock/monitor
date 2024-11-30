@@ -13,3 +13,8 @@ monitor-core = { path = "../monitor-core" }
 serde = { version = "1.0.215", features = ["derive"] }
 tokio-stream = "0.1.16"
 futures-util = "0.3.31"
+serial_test = "3.2.0"
+
+[dev-dependencies]
+serial_test = "3.2.0"
+tokio-test = "0.4.4"

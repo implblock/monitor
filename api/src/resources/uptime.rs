@@ -82,7 +82,7 @@ impl Probe for Uptime {
 pub async fn test_probe_uptime() -> crate::Any {
     let data = "100.0 10.0";
 
-    crate::testing::point_env_file(
+    crate::tests::point_env_file(
         "UPTIME",
         "/tmp/uptime",
         data,
