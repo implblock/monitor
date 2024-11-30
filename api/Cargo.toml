@@ -7,7 +7,7 @@ edition = "2021"
 serde = { version = "1.0.215", features = ["derive"] }
 tokio = { version = "1.41.1", features = ["full"] }
 monitor-core = { path = "../monitor-core" }
-tokio-stream = "0.1.16"
+tokio-stream = { version = "0.1.16", features = ["fs", "full"] }
 futures-util = "0.3.31"
 serial_test = "3.2.0"
 thiserror = "2.0.3"

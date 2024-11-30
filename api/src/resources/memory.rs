@@ -48,9 +48,11 @@ pub struct Memory {
 }
 
 impl Memory {
-    /// Returns the difference of the total
-    /// memory and the free memory.
-    pub fn used(&self) -> u64 {
+    pub fn swap_usage(&self) -> u64 {
+        self.swap_total - self.swap_free
+    }
+
+    pub fn mem_usage(&self) -> u64 {
         self.total - self.free
     }
 }

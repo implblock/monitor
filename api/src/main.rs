@@ -33,7 +33,9 @@ async fn main() -> Any {
         .route("/uptime", routing::get(routes::uptime))
         .route("/mem/rt", routing::get(routes::mem_sse))
         .route("/cpu/rt", routing::get(routes::cpu_sse))
-        .route("/uptime/rt", routing::get(routes::uptime_sse));
+        .route("/network", routing::get(routes::network))
+        .route("/uptime/rt", routing::get(routes::uptime_sse))
+        .route("/network/rt", routing::get(routes::network_sse));
 
     tracing::info!(
         "now serving on {}", addr,
