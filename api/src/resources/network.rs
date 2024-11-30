@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::{Debug, Display}, path::PathBuf, str::FromStr};
+use std::{collections::HashMap, fmt::{Debug, Display}, path::{Path, PathBuf}, str::FromStr};
 
 use anyhow::anyhow;
 use futures_util::TryStreamExt;
@@ -68,9 +68,9 @@ impl FromStr for OperState {
 impl Display for OperState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unknown => write!(f, "{}", "unknown"),
-            Self::Down => write!(f, "{}", "down"),
-            Self::Up => write!(f, "{}", "up"),
+            Self::Unknown => write!(f, "unknown"),
+            Self::Down => write!(f, "down"),
+            Self::Up => write!(f, "up"),
         }
     }
 }
@@ -179,7 +179,7 @@ impl Probe for Network {
 }
 
 
-async fn get_stats(interface: &PathBuf) -> Result<Stats, Error> {
+async fn get_stats(interface: &Path) -> Result<Stats, Error> {
     let path = format!("{}/statistics", interface.to_string_lossy());
 
     let rstats = ReadDirStream::new(read_dir(path).await?)
@@ -212,7 +212,7 @@ async fn get_stats(interface: &PathBuf) -> Result<Stats, Error> {
         "tx_bytes",
     ].map(|x| async {
         match rstats.get(x) {
-            None => return Err(Error::MissingStat {
+            None => Err(Error::MissingStat {
                 interface: interface.to_string_lossy()
                     .to_string(),
                     stat: x.to_string(),
