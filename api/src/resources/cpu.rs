@@ -125,7 +125,7 @@ impl Probe for Usage {
         ]: [
             u64; 10
         ] = parts.map(|x| x.parse::<u64>()
-                .map_err(|x| UsageError::ParseInt(x))
+                .map_err(UsageError::ParseInt)
             )
             .try_collect::<Vec<u64>>()?
             .try_into()
