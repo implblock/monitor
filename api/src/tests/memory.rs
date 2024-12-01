@@ -1,4 +1,4 @@
-use monitor_core::probe::Probe;
+use monitor::probe::Probe;
 
 use crate::resources::memory::{Error, Memory};
 

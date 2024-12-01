@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use monitor_core::probe::Probe;
+use monitor::probe::Probe;
 
 use crate::resources::uptime::{Error, Uptime};
 

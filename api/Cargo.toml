@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+tokio-stream = { version = "0.1.16", features = ["fs", "full"] }
 serde = { version = "1.0.215", features = ["derive"] }
 tokio = { version = "1.41.1", features = ["full"] }
-monitor-core = { path = "../monitor-core" }
-tokio-stream = { version = "0.1.16", features = ["fs", "full"] }
+monitor = { path = "../monitor" }
 futures-util = "0.3.31"
 serial_test = "3.2.0"
 thiserror = "2.0.3"

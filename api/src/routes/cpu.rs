@@ -8,8 +8,8 @@ use axum::{
 
 use std::convert::Infallible;
 
-use monitor_core::probe::Probe;
 use tokio_stream::StreamExt;
+use monitor::probe::Probe;
 use futures_util::Stream;
 
 use crate::{

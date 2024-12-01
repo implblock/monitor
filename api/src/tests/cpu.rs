@@ -1,5 +1,5 @@
 use crate::resources::cpu::{Cpu, Usage, UsageError};
-use monitor_core::probe::Probe;
+use monitor::probe::Probe;
 
 const USAGE_STR: &str = "cpu  1 2 3 4 5 6 7 8 9 10";
 

@@ -8,7 +8,7 @@ use serde::{
     Serialize,
 };
 
-use monitor_core::probe::Probe;
+use monitor::probe::Probe;
 use thiserror::Error;
 
 use tokio::{

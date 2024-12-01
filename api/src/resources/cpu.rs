@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use monitor_core::probe::Probe;
 use std::num::ParseIntError;
+use monitor::probe::Probe;
 use thiserror::Error;
 
 use tokio::{

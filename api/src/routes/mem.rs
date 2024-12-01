@@ -1,6 +1,6 @@
 use axum::{response::{sse::Event, Sse}, Json};
 
-use monitor_core::probe::Probe;
+use monitor::probe::Probe;
 use std::convert::Infallible;
 
 use tokio_stream::StreamExt;

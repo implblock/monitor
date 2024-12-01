@@ -12,7 +12,7 @@ use tokio::{
 
 use serde::{Deserialize, Serialize};
 use futures_util::TryStreamExt;
-use monitor_core::probe::Probe;
+use monitor::probe::Probe;
 use anyhow::anyhow;
 
 use tokio_stream::wrappers::ReadDirStream;

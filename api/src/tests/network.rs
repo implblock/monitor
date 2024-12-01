@@ -1,7 +1,7 @@
 use std::fs::remove_dir_all;
 
-use monitor_core::probe::Probe;
 use tokio::{fs::File, io::AsyncWriteExt};
+use monitor::probe::Probe;
 
 use crate::resources::network::{Error, Info, Interface, Network, OperState, Stats};
 

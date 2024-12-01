@@ -30,7 +30,7 @@ dependencies = [
  "anyhow",
  "axum",
  "futures-util",
- "monitor-core",
+ "monitor",
  "serde",
  "serial_test",
  "thiserror",
@@ -432,7 +432,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "monitor-core"
+name = "monitor"
 version = "0.1.0"
 dependencies = [
  "futures-util",
