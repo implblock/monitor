@@ -18,6 +18,8 @@ const PORT: u16 = 6942;
 
 #[tokio::main]
 async fn main() -> Any {
+    tracing_subscriber::fmt::init();
+
     let addr = std::env::var("ADDR").unwrap_or(
         // the default shouldn't be loopback
         format!("0.0.0.0:{}", PORT)
