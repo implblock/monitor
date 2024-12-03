@@ -1,6 +1,6 @@
 use std::fs::remove_dir_all;
 
-use crate::resources::cpu::{Core, CoreError, Cores, Usage, UsageError};
+use crate::resources::cpu::{Core, CoreError, Cores, Info, InfoError, Usage, UsageError};
 use monitor::probe::Probe;
 use tokio::{fs::File, io::AsyncWriteExt};
 
@@ -227,6 +227,157 @@ pub async fn test_probe_cpu_cores_io() -> crate::Any {
         .unwrap_err();
 
     assert!(matches!(err, CoreError::Io(_)));
+
+    Ok(())
+}
+
+const INFO_STR: &str = "\
+processor : 0
+vendor_id  : GenuineIntel
+model name  : Intel(R) Core(TM) i7-10870H CPU @ 2.20GHz
+cpu MHz  : 800.000
+siblings  : 16
+cpu cores : 8
+power management:
+";
+
+fn info() -> Info {
+    Info {
+        model: Some(String::from(
+            "Intel(R) Core(TM) i7-10870H CPU @ 2.20GHz"
+        )),
+        mhz: 800.000,
+        siblings: 16,
+        cores: 8,
+    }
+}
+
+#[tokio::test]
+#[serial_test::serial]
+pub async fn test_probe_cpu_info_parse_float() -> crate::Any {
+    let data = INFO_STR.replace("800.000", "abc");
+
+    super::point_env_file(
+        "INFO",
+        "/tmp/info",
+        &data,
+    ).await?;
+
+    let err = Info::probe().await
+        .unwrap_err();
+
+    assert!(matches!(err, InfoError::ParseFloat(_)));
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial_test::serial]
+pub async fn test_probe_cpu_info_missing_mhz() -> crate::Any {
+    let data = INFO_STR.replace("cpu MHz", "placeholder");
+
+    super::point_env_file(
+        "INFO",
+        "/tmp/info",
+        &data,
+    ).await?;
+
+    let err = Info::probe().await
+        .unwrap_err();
+
+    dbg!(&err);
+
+    assert!(matches!(err, InfoError::CpuMhzNotFound));
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial_test::serial]
+pub async fn test_probe_cpu_info_missing_cores() -> crate::Any {
+    let data = INFO_STR.replace("cpu cores", "placeholder");
+
+    super::point_env_file(
+        "INFO",
+        "/tmp/info",
+        &data,
+    ).await?;
+
+    let err = Info::probe().await
+        .unwrap_err();
+
+    dbg!(&err);
+
+    assert!(matches!(err, InfoError::CoresNotFound));
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial_test::serial]
+pub async fn test_probe_cpu_info_missing_siblings() -> crate::Any {
+    let data = INFO_STR.replace("siblings", "placeholder");
+
+    super::point_env_file(
+        "INFO",
+        "/tmp/info",
+        &data,
+    ).await?;
+
+    let err = Info::probe().await
+        .unwrap_err();
+
+    dbg!(&err);
+
+    assert!(matches!(err, InfoError::SiblingsNotFound));
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial_test::serial]
+pub async fn test_probe_cpu_info_parse_int() -> crate::Any {
+    let data = INFO_STR.replace("8", "abc");
+
+    super::point_env_file(
+        "INFO",
+        "/tmp/info",
+        &data,
+    ).await?;
+
+    let err = Info::probe().await
+        .unwrap_err();
+
+    assert!(matches!(err, InfoError::ParseInt(_)));
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial_test::serial]
+pub async fn test_probe_cpu_info_success() -> crate::Any {
+    super::point_env_file(
+        "INFO",
+        "/tmp/info",
+        INFO_STR,
+    ).await?;
+
+    let res = Info::probe().await?;
+
+    assert_eq!(res, info());
+
+    Ok(())
+}
+
+#[tokio::test]
+#[serial_test::serial]
+pub async fn test_probe_cpu_info_io() -> crate::Any {
+    std::env::set_var("INFO", "/tmp/not/a/file");
+
+    let err = Info::probe().await
+        .unwrap_err();
+
+    assert!(matches!(err, InfoError::Io(_)));
 
     Ok(())
 }

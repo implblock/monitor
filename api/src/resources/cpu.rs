@@ -1,4 +1,4 @@
-use std::{collections::HashMap, num::ParseIntError, path::PathBuf};
+use std::{collections::HashMap, num::{ParseFloatError, ParseIntError}, path::PathBuf};
 use futures_util::{stream, StreamExt, TryStreamExt};
 use tokio_stream::wrappers::ReadDirStream;
 use serde::{Deserialize, Serialize};
@@ -17,9 +17,9 @@ use tokio::{
 
 
 #[derive(
-    PartialOrd, Ord,
-    PartialEq, Eq,
     Deserialize,
+    PartialOrd,
+    PartialEq,
     Serialize,
     Default,
     Debug,
@@ -35,6 +35,7 @@ use tokio::{
 pub struct Cpu {
     pub cores: Vec<Core>,
     pub usage: Usage,
+    pub info: Info,
     // TODO make other
     // stuff here--
 }
@@ -51,6 +52,8 @@ pub enum CpuError {
     UsageError(#[from] UsageError),
     #[error(transparent)]
     CoreError(#[from] CoreError),
+    #[error(transparent)]
+    InfoError(#[from] InfoError),
 }
 
 #[derive(
@@ -270,10 +273,12 @@ impl Probe for Cpu {
     async fn probe() -> Result<Self::Output, Self::Error> {
         let usage = Usage::probe().await?;
         let cores = Cores::probe().await?;
+        let info = Info::probe().await?;
 
         Ok(Self {
             cores,
             usage,
+            info,
         })
     }
 }
@@ -377,6 +382,98 @@ impl Probe for Usage {
             idle,
             nice,
             irq,
+        })
+    }
+}
+
+#[derive( 
+    Deserialize,
+    PartialOrd,
+    Serialize,
+    PartialEq,
+    Default,
+    Debug,
+    Clone,
+)]
+
+pub struct Info {
+    pub model: Option<String>,
+    pub siblings: usize,
+    pub cores: usize,
+    pub mhz: f64,
+}
+
+#[derive(
+    Error,
+    Debug,
+)]
+
+pub enum InfoError {
+    #[error("an io error occurred getting cpu info: {0}")]
+    Io(#[from] io::Error),
+    #[error("cpu cores not found in cpu info")]
+    CoresNotFound,
+    #[error("failed to parse float: {0}")]
+    ParseFloat(#[from] ParseFloatError),
+    #[error("failed to parse int: {0}")]
+    ParseInt(#[from] ParseIntError),
+    #[error("failed to find siblings")]
+    SiblingsNotFound,
+    #[error("failed to find cpu mhz")]
+    CpuMhzNotFound,
+}
+
+impl Probe for Info {
+    type Error = InfoError;
+
+    type Output = Self;
+
+    async fn probe() -> Result<Self::Output, Self::Error> {
+        let info_file = std::env::var("INFO")
+            .unwrap_or("/proc/cpuinfo".into());
+
+        let mut file = File::open(info_file).await?;
+
+        let mut cpuinfo = String::new();
+
+        file.read_to_string(&mut cpuinfo)
+            .await?;
+
+        let map = cpuinfo.split("power management:")
+            .next()
+            .map(|x| {
+                x.lines().map(|x| x.trim().split(':'))
+                    .filter_map(|mut x| Some((x.next()?, x.next()?)))
+                    .map(|(k, v)| {
+                        (k.trim()
+                            .to_string(),
+                        v.trim()
+                            .to_string())
+                    })
+                    .collect::<HashMap<String, String>>()
+            })
+            .unwrap_or_default();
+
+        let siblings = map.get("siblings").ok_or(
+            InfoError::SiblingsNotFound,
+        )?.parse::<usize>()?;
+
+        let cores = map.get("cpu cores").ok_or(
+            InfoError::CoresNotFound,
+        )?.parse::<usize>()?;
+
+        let mhz = map.get("cpu MHz").ok_or(
+            InfoError::CpuMhzNotFound,
+        )?.parse::<f64>()?;
+
+        let model = map.get("model name")
+            .cloned();
+
+        Ok(Self {
+            siblings,
+            cores,
+            model,
+            mhz,
         })
     }
 }
