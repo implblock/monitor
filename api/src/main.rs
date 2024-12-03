@@ -34,8 +34,14 @@ async fn main() -> Any {
         .route("/mem/rt", routing::get(routes::mem_sse))
         .route("/cpu/rt", routing::get(routes::cpu_sse))
         .route("/network", routing::get(routes::network))
+        .route("/cpu/info", routing::get(routes::cpu_info))
+        .route("/cpu/cores", routing::get(routes::cpu_cores))
+        .route("/cpu/usage", routing::get(routes::cpu_usage))
         .route("/uptime/rt", routing::get(routes::uptime_sse))
-        .route("/network/rt", routing::get(routes::network_sse));
+        .route("/network/rt", routing::get(routes::network_sse))
+        .route("/cpu/info/rt", routing::get(routes::cpu_info_sse))
+        .route("/cpu/cores/rt", routing::get(routes::cpu_cores_sse))
+        .route("/cpu/usage/rt", routing::get(routes::cpu_usage_sse));
 
     tracing::info!(
         "now serving on {}", addr,
